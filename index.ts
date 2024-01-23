@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 // Morelia -> Python Transpiler
 
 // Base tokens for Lexer/Tokenizer
@@ -38,12 +36,15 @@ enum IRToken {
     
     Declare = "Declare",
     Assign = "Assign",
+    Args = "Args",
+    
     Function = "Function",
     Variable = "Variable",
     Integer = "Integer",
     String = "String",
     Float = "Float",
     Path = "Path",
+    Newline = "Newline",
 }
 
 function TokenPart(string: string) {
@@ -53,7 +54,7 @@ function TokenPart(string: string) {
 // Tokenizer/Lexer
 function Tokenize(input: string) {
     let output: string[] = []
-    let chars = input.split("")
+    const chars = input.split("")
     
     for (let i = 0; i < chars.length; i++) {
         const c = chars[i]
@@ -180,28 +181,90 @@ function Parse(toks: string[]) {
     let output: string[] = []
     
     for (let i = 0; i < toks.length; i++) {
-        let t = toks[i]
+        const t = toks[i]
         
-        if (t.includes(BaseToken.Identifier)) {
+        if (t.includes(BaseToken.Identifier)) { // this has to be redone in someway because it thought it through and i dont want to write it in a comment
             if (toks[i + 1] === BaseToken.Equals) {
                 // handle variable assignment
                 output.push(IRToken.Assign + ":" + TokenPart(t)[1])
                 i++
             }
             
-            /*if (toks[i + 1] === BaseToken.OpenParen) {
-                // TODO: handle function declarations
-                console.info("function declarations not implemented")
-            }*/
+            if (toks[i + 1] === BaseToken.OpenParen) {
+                // TODO: parse function declarations and calls
+
+                let args: string
+                
+                let hasArgs = false
+                let isDeclaration = false
+
+                const openParenIndex = i + 1
+                let closeParenIndex
+                let openCurlyIndex // will be undefined if it is a function call rather than declaration
+                let closeCurlyIndex // will be undefined if it is a function call rather than declaration
+
+                // loop over the tokens to find the indices for important symbols
+                for (let j = i + 1; j < toks.length; j++) {
+                    if (toks[j] === BaseToken.CloseParen) { 
+                        closeParenIndex = j
+                    }
+                    
+                    if (toks[j] === BaseToken.OpenCurly) {
+                        openCurlyIndex = j
+                        isDeclaration = true
+                    }
+                    
+                    if (toks[j] === BaseToken.CloseCurly)
+                        closeCurlyIndex = j
+                }
+                
+                if (openParenIndex + 1 !== closeParenIndex)
+                    hasArgs = true
+
+                if (closeParenIndex === undefined) {
+                    console.error("morelia: function call/declaration does not have a closing parenthesis")
+                    process.exit(1)
+                }
+                
+                if (hasArgs) {
+                    console.log("has args")
+                    // parse arguments
+                    args = "" // initializing args because it is undefined at default
+                    
+                    // make a for loop that starts at openParenIndex and goes until closeParenIndex that does parsing stuff on the arguments thingies.
+                    for (let arg = openParenIndex + 1; arg < closeParenIndex; arg++) {
+                        if (toks[arg] === BaseToken.Comma) {
+                            args += ","
+                        }
+                        
+                        args += toks[arg]
+                    }
+                    
+                    if (args.split(" ").length > 1) {
+                        console.error("morelia: function call/declaration contains two arguments, but no comma separator")
+                        process.exit(1)
+                    }
+                    
+                    console.log(args)
+                }
+                
+                if (isDeclaration) {
+                    // handle function declaration
+                    //output.push(IRToken.Declare + ":" + )
+                } else {
+                    // handle function call
+                    output.push(IRToken.Function + ":" + TokenPart(t)[1]) // TODO: push arguments if there are any
+                }
+            }
             
-            // identifier is being used as variable or function call
+            // identifier is being used as variable
             //output.push(IRToken.Variable + ":" + TokenPart(t)[1])
         } else if (t.includes(BaseToken.Integer)) {
             // TODO: check if there is something wrong
             
             output.push(IRToken.Integer + ":" + TokenPart(t)[1])
         } else if (t === BaseToken.Newline) {
-            
+            output.push(IRToken.Newline)
         } else {
             console.log("unparsed token found in parser: " + t)
         }
@@ -214,7 +277,7 @@ function Parse(toks: string[]) {
 function Generate(ir: string[]) {}
 
 // Make the input things and stuff
-const source = 'x = 25\nprint(x)'
+const source: string = 'x = 25\nprint(x)'
 const tokens= Tokenize(source)
 console.log(tokens)
 const ir = Parse(tokens)
