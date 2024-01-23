@@ -135,7 +135,7 @@ function Parse(tokens: string[]) {}
 function Generate(ir: string[]) {}
 
 // Make the input things and stuff
-const source = 'print("test\n");'
+const source = 'fun add(x, y) {\nreturn x + y\n}'
 const tokens= Tokenize(source)
 console.log(tokens)
 //const ir = Parse(tokens)
