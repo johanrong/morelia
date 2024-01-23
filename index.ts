@@ -19,23 +19,44 @@ enum BaseToken {
     CloseCurly = "CloseCurly",
     OpenBracket = "OpenBracket",
     CloseBracket = "CloseBracket",
-
+    Newline = "Newline",
+    
     Integer = "Integer",
     Float = "Float",
     String = "String",
+    Path = "Path",
     Identifier = "Identifier",
 }
 
 // Intermediate Representation tokens for Parser
-enum IRToken {}
+enum IRToken {
+    Import = "Import",
+    From = "From",
+    While = "While",
+    For = "For",
+    If = "If",
+    
+    Declare = "Declare",
+    Assign = "Assign",
+    Function = "Function",
+    Variable = "Variable",
+    Integer = "Integer",
+    String = "String",
+    Float = "Float",
+    Path = "Path",
+}
+
+function TokenPart(string: string) {
+    return string.split(":")
+}
 
 // Tokenizer/Lexer
 function Tokenize(input: string) {
     let output: string[] = []
-    let array = input.split("")
+    let chars = input.split("")
     
-    for (let i = 0; i < array.length; i++) {
-        const c = array[i]
+    for (let i = 0; i < chars.length; i++) {
+        const c = chars[i]
 
         if (c === "=") {
             output.push(BaseToken.Equals)
@@ -71,15 +92,15 @@ function Tokenize(input: string) {
             let result = ""
             let j = i
 
-            for (j; j < array.length; j++) {
-                if (/^[0-9]+$/.test(array[j]) || array[j] === ".") {
-                    result += array[j]
+            for (j; j < chars.length; j++) {
+                if (/^[0-9]+$/.test(chars[j]) || chars[j] === ".") {
+                    result += chars[j]
                 } else {
                     break
                 }
             }
 
-            i += j - i
+            i += j - i - 1
 
             if (result.includes(".")) output.push(BaseToken.Float + ":" + result)
             else output.push(BaseToken.Integer + ":" + result)
@@ -87,9 +108,9 @@ function Tokenize(input: string) {
             let result = ""
             let j = i + 1
             
-            for (j; j < array.length; j++) {
-                if (array[j] !== '"') {
-                    result += array[j]
+            for (j; j < chars.length; j++) {
+                if (chars[j] !== '"') {
+                    result += chars[j]
                 } else {
                     break
                 }
@@ -101,9 +122,9 @@ function Tokenize(input: string) {
             let result = ""
             let j = i
 
-            for (j; j < array.length; j++) {
-                if (/^[a-zA-Z0-9_]+$/.test(array[j])) {
-                    result += array[j]
+            for (j; j < chars.length; j++) {
+                if (/^[a-zA-Z0-9_]+$/.test(chars[j])) {
+                    result += chars[j]
                 } else {
                     break
                 }
@@ -111,12 +132,38 @@ function Tokenize(input: string) {
 
             i += j - i - 1
             output.push(BaseToken.Identifier + ":" + result)
+        } else if (c === "^") {
+            let result = ""
+            let j = i + 2
+
+            for (j; j < chars.length; j++) {
+                if (chars[j] !== '"') {
+                    result += chars[j]
+                } else {
+                    break
+                }
+            }
+
+            i += j - i
+            output.push(BaseToken.Path + ":" + result)
         } else if (c === " ") { // ignore
             console.info("ignoring whitespace")
+        } else if (c === "#") {
+            let j = i
+            
+            for (j; j < chars.length; j++) {
+                if (chars[j] === "\n") {
+                    break
+                }
+            }
+            
+            i += j - i
         } else if (c === "\n") { // ignore
-            console.info("ignoring line feed")
+            output.push(BaseToken.Newline)
         } else if (c === "\r") { // ignore
-            console.info("ignoring carriage return")
+            if (chars[i + 1] && chars[i + 1] !== "\n")
+                output.push(BaseToken.Newline)
+            else console.info("ignoring carriage return")
         } else if (c === ";") {
             console.info("ignoring semicolon")
         } else {
@@ -129,16 +176,49 @@ function Tokenize(input: string) {
 }
 
 // Parser
-function Parse(tokens: string[]) {}
+function Parse(toks: string[]) {
+    let output: string[] = []
+    
+    for (let i = 0; i < toks.length; i++) {
+        let t = toks[i]
+        
+        if (t.includes(BaseToken.Identifier)) {
+            if (toks[i + 1] === BaseToken.Equals) {
+                // handle variable assignment
+                output.push(IRToken.Assign + ":" + TokenPart(t)[1])
+                i++
+            }
+            
+            /*if (toks[i + 1] === BaseToken.OpenParen) {
+                // TODO: handle function declarations
+                console.info("function declarations not implemented")
+            }*/
+            
+            // identifier is being used as variable or function call
+            //output.push(IRToken.Variable + ":" + TokenPart(t)[1])
+        } else if (t.includes(BaseToken.Integer)) {
+            // TODO: check if there is something wrong
+            
+            output.push(IRToken.Integer + ":" + TokenPart(t)[1])
+        } else if (t === BaseToken.Newline) {
+            
+        } else {
+            console.log("unparsed token found in parser: " + t)
+        }
+    }
+    
+    return output
+}
 
 // Code generator
 function Generate(ir: string[]) {}
 
 // Make the input things and stuff
-const source = 'fun add(x, y) {\nreturn x + y\n}'
+const source = 'x = 25\nprint(x)'
 const tokens= Tokenize(source)
 console.log(tokens)
-//const ir = Parse(tokens)
+const ir = Parse(tokens)
+console.log(ir)
 //const output = Generate(ir)
 
 // write output to file
