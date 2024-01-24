@@ -1,6 +1,8 @@
 // Morelia -> Python Transpiler
 
 // Base tokens for Lexer/Tokenizer
+import * as constants from "constants";
+
 enum BaseToken {
     Equals = "Equals",
     Greater = "Grater",
@@ -176,6 +178,31 @@ function Tokenize(input: string) {
     return output
 }
 
+function parseArgs(openParenIndex: number,  closeParenIndex: number, toks: string[]) {
+    let args: string[] = []
+    let argAmount = 0
+    console.log(openParenIndex)
+    console.log(closeParenIndex)
+    
+    for (let i = openParenIndex + 1; i < closeParenIndex; i++) {
+        if (toks[i] === BaseToken.Comma) {
+            args.push(",")
+        } else if (toks[i].includes(BaseToken.Identifier)) {
+            if (toks[i + 1] === BaseToken.OpenParen) {
+                args.push(IRToken.Function + ":" + TokenPart(toks[i])[1])
+            } else {
+                args.push(IRToken.Variable + ":" + TokenPart(toks[i])[1])
+            }
+        } else {
+            args.push(toks[i])
+        }
+        
+        argAmount++
+    }
+    
+    return [args.join(""),  argAmount]
+}
+
 // Parser
 function Parse(toks: string[]) {
     let output: string[] = []
@@ -184,81 +211,73 @@ function Parse(toks: string[]) {
         const t = toks[i]
         
         if (t.includes(BaseToken.Identifier)) { // this has to be redone in someway because it thought it through and i dont want to write it in a comment
-            if (toks[i + 1] === BaseToken.Equals) {
-                // handle variable assignment
-                output.push(IRToken.Assign + ":" + TokenPart(t)[1])
-                i++
-            }
+            let isVariableUsage = false
+            let isVariableAssignment = false
+            let isFunctionCall = false
+            let isFunctionDeclaration = false
             
-            if (toks[i + 1] === BaseToken.OpenParen) {
-                // TODO: parse function declarations and calls
-
-                let args: string
+            let hasArgs = false
+            
+            let openParenIndex
+            let closeParenIndex
+            let openCurlyIndex
+            let closeCurlyIndex
+            
+            if (toks[i + 1] === BaseToken.Equals) {
+                isVariableAssignment = true
+            } if (toks[i + 1] === BaseToken.OpenParen) {
+                // the identifier is either a function call or declaration
                 
-                let hasArgs = false
-                let isDeclaration = false
-
-                const openParenIndex = i + 1
-                let closeParenIndex
-                let openCurlyIndex // will be undefined if it is a function call rather than declaration
-                let closeCurlyIndex // will be undefined if it is a function call rather than declaration
-
-                // loop over the tokens to find the indices for important symbols
+                openParenIndex = i + 1
+                if (toks[i + 2] !== BaseToken.CloseParen)
+                    hasArgs = true
+                
                 for (let j = i + 1; j < toks.length; j++) {
-                    if (toks[j] === BaseToken.CloseParen) { 
+                    if (toks[j] === BaseToken.CloseParen)
                         closeParenIndex = j
-                    }
-                    
-                    if (toks[j] === BaseToken.OpenCurly) {
+                    if (toks[j] === BaseToken.OpenCurly)
                         openCurlyIndex = j
-                        isDeclaration = true
-                    }
-                    
                     if (toks[j] === BaseToken.CloseCurly)
                         closeCurlyIndex = j
                 }
                 
-                if (openParenIndex + 1 !== closeParenIndex)
-                    hasArgs = true
-
-                if (closeParenIndex === undefined) {
-                    console.error("morelia: function call/declaration does not have a closing parenthesis")
-                    process.exit(1)
-                }
-                
-                if (hasArgs) {
-                    console.log("has args")
-                    // parse arguments
-                    args = "" // initializing args because it is undefined at default
-                    
-                    // make a for loop that starts at openParenIndex and goes until closeParenIndex that does parsing stuff on the arguments thingies.
-                    for (let arg = openParenIndex + 1; arg < closeParenIndex; arg++) {
-                        if (toks[arg] === BaseToken.Comma) {
-                            args += ","
-                        }
-                        
-                        args += toks[arg]
-                    }
-                    
-                    if (args.split(" ").length > 1) {
-                        console.error("morelia: function call/declaration contains two arguments, but no comma separator")
-                        process.exit(1)
-                    }
-                    
-                    console.log(args)
-                }
-                
-                if (isDeclaration) {
-                    // handle function declaration
-                    //output.push(IRToken.Declare + ":" + )
+                if (openCurlyIndex) {
+                    isFunctionDeclaration = true
                 } else {
-                    // handle function call
-                    output.push(IRToken.Function + ":" + TokenPart(t)[1]) // TODO: push arguments if there are any
+                    isFunctionCall = true
                 }
+            } else {
+                // the identifier is a variable usage
+                isVariableUsage = true
             }
             
-            // identifier is being used as variable
-            //output.push(IRToken.Variable + ":" + TokenPart(t)[1])
+            if (isFunctionDeclaration) {
+                // parse args
+                output.push(IRToken.Declare + ":" + TokenPart(t)[1])
+            } else if (isFunctionCall) {
+                if (hasArgs) {
+                    // @ts-ignore
+                    const [args, argAmount] = parseArgs(openParenIndex, closeParenIndex, toks)
+                    output.push(IRToken.Function + ":" + TokenPart(t)[1])
+                    output.push(IRToken.Args + ":" + args)
+                    i += 2 // skip identifier and openParen
+                    i += (Number(argAmount))
+                    i++ // skip close paren
+                } else {
+                    i += 2 // skip identifier and openParen
+                    output.push(IRToken.Function + ":" + TokenPart(t)[1])
+                    i++ // skip closeParen
+                }
+            } else if (isVariableAssignment) {
+                output.push(IRToken.Assign + ":" + TokenPart(t)[1])
+                i++
+            } else if (isVariableUsage) {
+                output.push(IRToken.Variable + ":" + TokenPart(t)[1])
+            } else {
+                console.error("morelia: something horrible has happened")
+            }
+            
+            // skip indices
         } else if (t.includes(BaseToken.Integer)) {
             // TODO: check if there is something wrong
             
@@ -277,7 +296,7 @@ function Parse(toks: string[]) {
 function Generate(ir: string[]) {}
 
 // Make the input things and stuff
-const source: string = 'x = 25\nprint(x)'
+const source: string = 'x = 25\nprint(1, 2, 3, 4)\nprint(x)'
 const tokens= Tokenize(source)
 console.log(tokens)
 const ir = Parse(tokens)
