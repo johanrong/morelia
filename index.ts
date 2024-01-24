@@ -361,7 +361,7 @@ function Generate(ir: string[]) {}
 
 // Make the input things and stuff
 //const source: string = 'from @math import @pi'
-const source = Bun.file("test.ma").text()
+const source = Bun.file("test.mrl").text()
 const tokens= Tokenize(await source)
 console.log(tokens)
 const ir = Parse(tokens)
