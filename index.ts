@@ -1,7 +1,6 @@
 // Morelia -> Python Transpiler
 
 // Base tokens for Lexer/Tokenizer
-import * as constants from "constants";
 
 enum BaseToken {
     Equals = "Equals",
@@ -39,6 +38,12 @@ enum IRToken {
     Declare = "Declare",
     Assign = "Assign",
     Args = "Args",
+    End = "End",
+    
+    Plus = "Plus",
+    Minus = "Minus",
+    Asterisk = "Asterisk",
+    Slash = "Slash",
     
     Function = "Function",
     Variable = "Variable",
@@ -140,7 +145,7 @@ function Tokenize(input: string) {
             let j = i + 1
 
             for (j; j < chars.length; j++) {
-                if (/^[a-zA-Z0-9_]+$/.test(chars[j])) {
+                if (/^[a-zA-Z0-9_]+$/.test(chars[j]) || chars[j] === ".") {
                     result += chars[j]
                 } else {
                     break
@@ -238,11 +243,12 @@ function Parse(toks: string[]) {
                     console.error("morelia: from requires valid path")
                     process.exit(1)
                 }
-                
+
                 i += 3 // eat the path, import and import path
             } else if (TokenPart(t)[1] === "while") {
             } else if (TokenPart(t)[1] === "for") {
             } else if (TokenPart(t)[1] === "if") {
+            } else if (TokenPart(t)[1] === "return") {
             } else {
                 let isVariableUsage = false
                 let isVariableAssignment = false
@@ -274,7 +280,7 @@ function Parse(toks: string[]) {
                         if (!closeCurlyIndex && toks[j] === BaseToken.CloseCurly)
                             closeCurlyIndex = j
                     }
-                    
+
                     if (openParenIndex && !closeParenIndex) {
                         console.error("morelia: found opening parenthesis, but no closing parenthesis")
                         process.exit(1)
@@ -292,7 +298,18 @@ function Parse(toks: string[]) {
 
                 if (isFunctionDeclaration) {
                     // parse args
-                    output.push(IRToken.Declare + ";" + TokenPart(t)[1])
+                    if (hasArgs) {
+                        // @ts-ignore
+                        const [args, argAmount] = parseArgs(openParenIndex, closeParenIndex, toks)
+                        output.push(IRToken.Declare + ";" + TokenPart(t)[1])
+                        output.push(IRToken.Args + ";" + args)
+                        i += 2 // skip identifier and openParen
+                        i += (Number(argAmount))
+                        i++ // skip openCurly
+                    } else {
+                        i += 2 // skip identifier and openParen
+                        output.push(IRToken.Function + ";" + TokenPart(t)[1])
+                    }
                 } else if (isFunctionCall) {
                     if (hasArgs) {
                         // @ts-ignore
@@ -301,11 +318,9 @@ function Parse(toks: string[]) {
                         output.push(IRToken.Args + ";" + args)
                         i += 2 // skip identifier and openParen
                         i += (Number(argAmount))
-                        i++ // skip close paren
                     } else {
                         i += 2 // skip identifier and openParen
                         output.push(IRToken.Function + ";" + TokenPart(t)[1])
-                        i++ // skip closeParen
                     }
                 } else if (isVariableAssignment) {
                     output.push(IRToken.Assign + ";" + TokenPart(t)[1])
@@ -317,10 +332,20 @@ function Parse(toks: string[]) {
                 }
 
             }
+        } else if (TokenPart(t)[0] === BaseToken.CloseCurly) {
+            output.push(IRToken.End)
+        } else if (TokenPart(t)[0] === BaseToken.Plus) {
+            output.push(IRToken.Plus)
+        } else if (TokenPart(t)[0] === BaseToken.Minus) {
+            output.push(IRToken.Minus)
+        } else if (TokenPart(t)[0] === BaseToken.Asterisk) {
+            output.push(IRToken.Asterisk)
+        } else if (TokenPart(t)[0] === BaseToken.Slash) {
+            output.push(IRToken.Slash)
         } else if (TokenPart(t)[0] === BaseToken.Integer) {
             // TODO: check if there is something wrong
             
-            output.push(IRToken.Integer + ";" + TokenPart(t)[1])
+            output.push(IRToken.Integer + ":" + TokenPart(t)[1])
         } else if (TokenPart(t)[0] === BaseToken.Newline) {
             output.push(IRToken.Newline)
         } else {
@@ -335,8 +360,9 @@ function Parse(toks: string[]) {
 function Generate(ir: string[]) {}
 
 // Make the input things and stuff
-const source: string = 'from @math import @pi'
-const tokens= Tokenize(source)
+//const source: string = 'from @math import @pi'
+const source = Bun.file("test.ma").text()
+const tokens= Tokenize(await source)
 console.log(tokens)
 const ir = Parse(tokens)
 console.log(ir)
