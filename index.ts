@@ -34,6 +34,7 @@ enum IRToken {
     While = "While",
     For = "For",
     If = "If",
+    Return = "Return",
     
     Declare = "Declare",
     Assign = "Assign",
@@ -249,6 +250,7 @@ function Parse(toks: string[]) {
             } else if (TokenPart(t)[1] === "for") {
             } else if (TokenPart(t)[1] === "if") {
             } else if (TokenPart(t)[1] === "return") {
+                output.push(IRToken.Return)
             } else {
                 let isVariableUsage = false
                 let isVariableAssignment = false
@@ -301,8 +303,7 @@ function Parse(toks: string[]) {
                     if (hasArgs) {
                         // @ts-ignore
                         const [args, argAmount] = parseArgs(openParenIndex, closeParenIndex, toks)
-                        output.push(IRToken.Declare + ";" + TokenPart(t)[1])
-                        output.push(IRToken.Args + ";" + args)
+                        output.push(IRToken.Declare + ";" + TokenPart(t)[1] + ":" + IRToken.Args + ";" + args)
                         i += 2 // skip identifier and openParen
                         i += (Number(argAmount))
                         i++ // skip openCurly
@@ -314,8 +315,7 @@ function Parse(toks: string[]) {
                     if (hasArgs) {
                         // @ts-ignore
                         const [args, argAmount] = parseArgs(openParenIndex, closeParenIndex, toks)
-                        output.push(IRToken.Function + ";" + TokenPart(t)[1])
-                        output.push(IRToken.Args + ";" + args)
+                        output.push(IRToken.Function + ";" + TokenPart(t)[1] + ":" + IRToken.Args + ";" + args)
                         i += 2 // skip identifier and openParen
                         i += (Number(argAmount))
                     } else {
