@@ -1,2 +1,7 @@
-from @math import @pi
-print(@pi) # very nice
+import math
+add(x, y) {
+    return x + y
+}
+
+result = add(math.pi, math.pi)
+print(result)
