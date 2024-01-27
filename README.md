@@ -20,7 +20,7 @@ bun run bundle
 ## Running
 
 ### Linux
-- only tested on debian 12 bookworm
+-  tested on debian 12 bookworm wsl
 #### Complete project with bun
 ```bash
 bun start (args: path, --debug)
