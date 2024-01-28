@@ -8,7 +8,8 @@ import * as os from "node:os";
 
 enum BaseToken {
     Equals = "Equals",
-    Greater = "Grater",
+    Greater = "Greater",
+    Not = "Not",
     Less = "Less",
     Plus = "Plus",
     Minus = "Minus",
@@ -43,9 +44,13 @@ enum IRToken {
 function TokenPart(string: string) {
     if (string === undefined) {
         return ""
-    } 
+    }
     
-    return string.split(":")
+    if (!string.includes(":")) {
+        return [string]
+    }
+    
+    return [string.substring(0, string.indexOf(":")), string.substring(string.indexOf(":") + 1)]
 }
 
 function indent(indents: number) {
@@ -66,6 +71,8 @@ function Tokenize(input: string) {
             output.push(BaseToken.Greater)
         } else if (c === "<") {
             output.push(BaseToken.Less)
+        } else if (c === "!") {
+            output.push(BaseToken.Not)
         } else if (c === "+") {
             output.push(BaseToken.Plus)
         } else if (c === "-") {
@@ -107,14 +114,14 @@ function Tokenize(input: string) {
             if (result.includes(".")) output.push(BaseToken.Float + ":" + result)
             else output.push(BaseToken.Integer + ":" + result)
         } else if (c === '"') {
-            let result = '"'
+            let result = "'"
             let j = i + 1
             
             for (j; j < chars.length; j++) {
                 if (chars[j] !== '"') {
                     result += chars[j]
                 } else {
-                    result += '"'
+                    result += "'"
                     break
                 }
             }
@@ -171,12 +178,14 @@ function Parse(toks: string[]) {
         const t = toks[i]
 
         if (TokenPart(t)[0] === BaseToken.Equals) {
-            if (toks[i + 1] && TokenPart(toks[i + 1])[0] == BaseToken.Equals) {
-                // found double equals
+            if (TokenPart(toks[i + 1])[0] === BaseToken.Equals) {
                 output.push("==")
+                i++
             } else {
                 output.push("=")
             }
+        } else if (TokenPart(t)[0] === BaseToken.Not) {
+            output.push("!")
         } else if (TokenPart(t)[0] === BaseToken.Comma) {
             output.push(",")
         } else if (TokenPart(t)[0] === BaseToken.Identifier) {
@@ -215,13 +224,77 @@ function Parse(toks: string[]) {
             } else if (TokenPart(t)[1] === "while") {
             } else if (TokenPart(t)[1] === "for") {
             } else if (TokenPart(t)[1] === "if") {
+                let j = i + 1
+                let foundOpenCurly = false
+                let firstIndex = undefined
+                
+                for (j; j < toks.length; j++) {
+                    if (TokenPart(toks[j])[0] === BaseToken.Newline) {
+                        break
+                    }
+                    
+                    if (TokenPart(toks[j])[0] === BaseToken.OpenCurly) {
+                        if (openCurly !== j) {
+                            foundOpenCurly = true
+                            openCurly = j
+                            break
+                        }
+                    }
+                    
+                    if (TokenPart(toks[j])[0] === BaseToken.Greater) {
+                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
+                            firstIndex = j
+                        } else {
+                            console.error("morelia: invalid if statement, greater must be followed by equals")
+                            process.exit(1)
+                        }
+                    } else if (TokenPart(toks[j])[0] === BaseToken.Less) {
+                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
+                            firstIndex = j
+                        } else {
+                            console.error("morelia: invalid if statement, less must be followed by equals")
+                            process.exit(1)
+                        }
+                    } else if (TokenPart(toks[j])[0] === BaseToken.Not) {
+                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
+                            firstIndex = j
+                        } else {
+                            console.error("morelia: invalid if statement, not must be followed by equals")
+                            process.exit(1)
+                        }
+                    } else if (TokenPart(toks[j])[0] === BaseToken.Equals) {
+                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
+                            firstIndex = j
+                        } else if (TokenPart(toks[j - 1])[0] === BaseToken.Equals) {
+                            // ignore
+                        } else {
+                            console.error("morelia: invalid if statement, equals must be followed by equals")
+                            process.exit(1)
+                        }
+                    }
+                }
+                
+                if (!foundOpenCurly) {
+                    console.error("morelia: invalid if statement, missing opening curly brace")
+                    process.exit(1)
+                }
+                
+                if (firstIndex === undefined) {
+                    console.error("morelia: invalid if statement, missing equality operator")
+                    process.exit(1)
+                }
+                
+                output.push("if ")
             } else if (TokenPart(t)[1] === "return") {
-                //output.push(IRToken.Return)
                 output.push("return ")
             } else {
                 let j = i + 1
                 let foundOpenCurly = false
                 for (j; j < toks.length; j++) {
+                    if (TokenPart(toks[j])[0] === BaseToken.Newline) {
+                        break
+                    }
+                    
                     if (TokenPart(toks[j])[0] === BaseToken.OpenCurly) {
                         if (openCurly !== j) {
                             foundOpenCurly = true
@@ -254,22 +327,19 @@ function Parse(toks: string[]) {
             }
             
             if (TokenPart(t)[1].split(".").length - 1 !== 1) {
-                console.error("morelia: float contains multiple periods.")
+                console.error("morelia: float contains multiple periods")
                 process.exit(1)
             }
             
             output.push(TokenPart(t)[1])
         } else if (TokenPart(t)[0] === BaseToken.String) {
-            if (!TokenPart(t)[1].startsWith("\"")) {
-                console.error("morelia: string does not start with a quotation mark")
+            let str = TokenPart(t)[1].split("")
+            if (str[str.length - 1] !== "'") {
+                console.log(str[str.length - 1])
+                console.error(`morelia: string does not end with a quote: ${str.join("")}`)
                 process.exit(1)
             }
-
-            if (!TokenPart(t)[1].endsWith("\"")) {
-                console.error("morelia: string does not end with a quotation mark")
-                process.exit(1)
-            }
-
+            
             output.push(TokenPart(t)[1])
         } else if (TokenPart(t)[0] === BaseToken.OpenParen) {
             output.push("(")
@@ -350,13 +420,13 @@ if (!fs.existsSync(source_path)) {
 
 const source = fs.readFileSync(source_path).toString()
 const tokens= Tokenize(source)
-if (debugging) console.log(tokens)
+if (debugging) console.log("*From lexer*\n", tokens)
 
 const ir = Parse(tokens)
-if (debugging) console.log(ir)
+if (debugging) console.log("*From parser*\n", ir)
 
 const output = Generate(ir)
-if (debugging) console.log(output)
+if (debugging) console.log("*From codegen*\n", output)
 
 if (!fs.existsSync(os.homedir() + "/morelia")) {
     fs.mkdirSync(os.homedir() + "/morelia")
@@ -365,6 +435,7 @@ if (!fs.existsSync(os.homedir() + "/morelia")) {
 const temp_output = os.homedir() + "/morelia/temp.py"
 fs.writeFileSync(temp_output, output)
 
+if (debugging) console.log("*From output*")
 if (os.platform() === "linux") {
     child_process.spawnSync(`python3`, [temp_output], { stdio: 'inherit' })
 } else if (os.platform() === "win32" || os.platform() === "darwin") {

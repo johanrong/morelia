@@ -1,7 +1,5 @@
-import math
-add(x, y) {
-    return x + y
-}
+import time;
 
-result = add(math.pi, math.pi)
-print(result)
+print("Hello World!");
+time.sleep(1);
+print("Farewell cruel world.");
