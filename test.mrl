@@ -1,5 +1,11 @@
-import time;
+x = str(input("there: "))
 
-print("Hello World!");
-time.sleep(1);
-print("Farewell cruel world.");
+print(x)
+
+if x == "1" {
+    print("You have chosen 1")
+} elif x == "2" {
+    print("You have chosen 2")
+} else {
+    print("You have chosen something else")
+}

@@ -153,6 +153,7 @@ function Tokenize(input: string) {
             }
             
             i += j - i
+            output.push(BaseToken.Newline)
         } else if (c === "\n") { // ignore
             output.push(BaseToken.Newline)
         } else if (c === "\r") { // ignore
@@ -227,12 +228,12 @@ function Parse(toks: string[]) {
                 let j = i + 1
                 let foundOpenCurly = false
                 let firstIndex = undefined
-                
+
                 for (j; j < toks.length; j++) {
                     if (TokenPart(toks[j])[0] === BaseToken.Newline) {
                         break
                     }
-                    
+
                     if (TokenPart(toks[j])[0] === BaseToken.OpenCurly) {
                         if (openCurly !== j) {
                             foundOpenCurly = true
@@ -240,7 +241,7 @@ function Parse(toks: string[]) {
                             break
                         }
                     }
-                    
+
                     if (TokenPart(toks[j])[0] === BaseToken.Greater) {
                         if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
                             firstIndex = j
@@ -273,18 +274,105 @@ function Parse(toks: string[]) {
                         }
                     }
                 }
-                
+
                 if (!foundOpenCurly) {
                     console.error("morelia: invalid if statement, missing opening curly brace")
                     process.exit(1)
                 }
-                
+
                 if (firstIndex === undefined) {
                     console.error("morelia: invalid if statement, missing equality operator")
                     process.exit(1)
                 }
-                
+
                 output.push("if ")
+            } else if (TokenPart(t)[1] === "elif") {
+                // parse elseif
+                let j = i + 1
+                let foundOpenCurly = false
+                let firstIndex = undefined
+                
+                for (j; j < toks.length; j++) {
+                    if (TokenPart(toks[j])[0] === BaseToken.Newline) {
+                        break
+                    }
+                    
+                    if (TokenPart(toks[j])[0] === BaseToken.OpenCurly) {
+                        if (openCurly !== j) {
+                            foundOpenCurly = true
+                            openCurly = j
+                            break
+                        }
+                    }
+                    
+                    if (TokenPart(toks[j])[0] === BaseToken.Greater) {
+                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
+                            firstIndex = j
+                        } else {
+                            console.error("morelia: invalid elseif statement, greater must be followed by equals")
+                            process.exit(1)
+                        }
+                    } else if (TokenPart(toks[j])[0] === BaseToken.Less) {
+                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
+                            firstIndex = j
+                        } else {
+                            console.error("morelia: invalid elseif statement, less must be followed by equals")
+                            process.exit(1)
+                        }
+                    } else if (TokenPart(toks[j])[0] === BaseToken.Not) {
+                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
+                            firstIndex = j
+                        } else {
+                            console.error("morelia: invalid elseif statement, not must be followed by equals")
+                            process.exit(1)
+                        }
+                    } else if (TokenPart(toks[j])[0] === BaseToken.Equals) {
+                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
+                            firstIndex = j
+                        } else if (TokenPart(toks[j - 1])[0] === BaseToken.Equals) {
+                            // ignore
+                        } else {
+                            console.error("morelia: invalid elseif statement, equals must be followed by equals")
+                            process.exit(1)
+                        }
+                    }
+                }
+                
+                if (!foundOpenCurly) {
+                    console.error("morelia: invalid elseif statement, missing opening curly brace")
+                    process.exit(1)
+                }
+                
+                if (firstIndex === undefined) {
+                    console.error("morelia: invalid elseif statement, missing equality operator")
+                    process.exit(1)
+                }
+                
+                output.push("elif ")
+            } else if (TokenPart(t)[1] === "else") {
+                let j = i + 1
+                let foundOpenCurly = false
+                
+                for (j; j < toks.length; j++) {
+                    if (TokenPart(toks[j])[0] === BaseToken.Newline) {
+                        break
+                    }
+                    
+                    if (TokenPart(toks[j])[0] === BaseToken.OpenCurly) {
+                        if (openCurly !== j) {
+                            foundOpenCurly = true
+                            openCurly = j
+                            break
+                        }
+                    }
+                }
+                
+                if (!foundOpenCurly) {
+                    console.error("morelia: invalid else statement, missing opening curly brace")
+                    process.exit(1)
+                }
+                
+                output.push("else")
             } else if (TokenPart(t)[1] === "return") {
                 output.push("return ")
             } else {
@@ -349,8 +437,9 @@ function Parse(toks: string[]) {
             output.push(IRToken.Indent)
         } else if (TokenPart(t)[0] === BaseToken.CloseCurly) {
             output.push(IRToken.Outdent)
+            output.push(IRToken.Newline)
         } else if (TokenPart(t)[0] === BaseToken.Newline) {
-            if (TokenPart(toks[i - 1])[0] !== BaseToken.Newline) { // so there wont be to many newlines
+            if (TokenPart(toks[i - 1])[0] !== BaseToken.Newline && toks[i + 1] !== BaseToken.CloseCurly) { // so there wont be too many newlines
                 output.push(IRToken.Newline)
             }
         } else {
