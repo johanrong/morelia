@@ -301,7 +301,7 @@ function Parse(toks: string[]) {
             } else if (TokenPart(t)[1] === "while") {
                 let j = i + 1
                 let foundOpenCurly = false
-                
+
                 for (j; j < toks.length; j++) {
                     if (TokenPart(toks[j])[0] === BaseToken.Newline) {
                         break
@@ -315,13 +315,61 @@ function Parse(toks: string[]) {
                         }
                     }
                 }
-                
+
                 if (!foundOpenCurly) {
                     console.error("morelia: invalid while statement, missing opening curly brace")
                     process.exit(1)
                 }
-                
+
                 output.push("while ")
+            } else if (TokenPart(t)[1] === "try") {
+let j = i + 1
+                let foundOpenCurly = false
+
+                for (j; j < toks.length; j++) {
+                    if (TokenPart(toks[j])[0] === BaseToken.Newline) {
+                        break
+                    }
+
+                    if (TokenPart(toks[j])[0] === BaseToken.OpenCurly) {
+                        if (openCurly !== j) {
+                            foundOpenCurly = true
+                            openCurly = j
+                            break
+                        }
+                    }
+                }
+
+                if (!foundOpenCurly) {
+                    console.error("morelia: invalid try statement, missing opening curly brace")
+                    process.exit(1)
+                }
+
+                output.push("try")
+            } else if (TokenPart(t)[1] === "catch") {
+                let j = i + 1
+                let foundOpenCurly = false
+
+                for (j; j < toks.length; j++) {
+                    if (TokenPart(toks[j])[0] === BaseToken.Newline) {
+                        break
+                    }
+
+                    if (TokenPart(toks[j])[0] === BaseToken.OpenCurly) {
+                        if (openCurly !== j) {
+                            foundOpenCurly = true
+                            openCurly = j
+                            break
+                        }
+                    }
+                }
+
+                if (!foundOpenCurly) {
+                    console.error("morelia: invalid catch statement, missing opening curly brace")
+                    process.exit(1)
+                }
+
+                output.push("except ")
             } else {
                 let j = i + 1
                 let foundOpenCurly = false

@@ -1,12 +1,5 @@
-from time import sleep
-
-str = "Hello, World!"
-arr = [*str]
-
-i = 0
-while i < len(arr) {
-    # print out the characters leading up to index (i)
-    print("".join(arr[0:i + 1]))
-    i += 1
-    sleep(0.05)
+try {
+    print(x)
+} catch {
+    print("NameError")
 }
