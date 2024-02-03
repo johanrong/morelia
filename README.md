@@ -1,5 +1,5 @@
 # morelia
-- made in about a week, so it's just as good as javascript
+- made in a week so it's basically as good as javascript
 
 ## Prerequisites
 - python3
