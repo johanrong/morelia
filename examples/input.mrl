@@ -1,0 +1,7 @@
+from time import sleep
+
+age = int(input("Your age: "))
+
+sleep(1)
+
+print("You are " + str(age) + " years old")
