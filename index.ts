@@ -17,6 +17,7 @@ enum BaseToken {
     Slash = "Slash",
     Period = "Period",
     Comma = "Comma",
+    Colon = "Colon",
     OpenParen = "OpenParen",
     CloseParen = "CloseParen",
     OpenCurly = "OpenCurly",
@@ -97,6 +98,8 @@ function Tokenize(input: string) {
             output.push(BaseToken.Period)
         } else if (c === ",") {
             output.push(BaseToken.Comma)
+        } else if (c === ":") {
+            output.push(BaseToken.Colon)
         } else if (/^[0-9]$/.test(c)) {
             let result = ""
             let j = i
@@ -179,16 +182,13 @@ function Parse(toks: string[]) {
         const t = toks[i]
 
         if (TokenPart(t)[0] === BaseToken.Equals) {
-            if (TokenPart(toks[i + 1])[0] === BaseToken.Equals) {
-                output.push("==")
-                i++
-            } else {
-                output.push("=")
-            }
+            output.push("=")
         } else if (TokenPart(t)[0] === BaseToken.Not) {
             output.push("!")
         } else if (TokenPart(t)[0] === BaseToken.Comma) {
             output.push(",")
+        } else if (TokenPart(t)[0] === BaseToken.Colon) {
+            output.push(":")
         } else if (TokenPart(t)[0] === BaseToken.Identifier) {
             // check if identifier matches a keyword
 
@@ -222,7 +222,6 @@ function Parse(toks: string[]) {
                 }
 
                 i += 3 // eat the source_path, import and import source_path
-            } else if (TokenPart(t)[1] === "while") {
             } else if (TokenPart(t)[1] === "for") {
             } else if (TokenPart(t)[1] === "if") {
                 let j = i + 1
@@ -241,47 +240,10 @@ function Parse(toks: string[]) {
                             break
                         }
                     }
-
-                    if (TokenPart(toks[j])[0] === BaseToken.Greater) {
-                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
-                            firstIndex = j
-                        } else {
-                            console.error("morelia: invalid if statement, greater must be followed by equals")
-                            process.exit(1)
-                        }
-                    } else if (TokenPart(toks[j])[0] === BaseToken.Less) {
-                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
-                            firstIndex = j
-                        } else {
-                            console.error("morelia: invalid if statement, less must be followed by equals")
-                            process.exit(1)
-                        }
-                    } else if (TokenPart(toks[j])[0] === BaseToken.Not) {
-                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
-                            firstIndex = j
-                        } else {
-                            console.error("morelia: invalid if statement, not must be followed by equals")
-                            process.exit(1)
-                        }
-                    } else if (TokenPart(toks[j])[0] === BaseToken.Equals) {
-                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
-                            firstIndex = j
-                        } else if (TokenPart(toks[j - 1])[0] === BaseToken.Equals) {
-                            // ignore
-                        } else {
-                            console.error("morelia: invalid if statement, equals must be followed by equals")
-                            process.exit(1)
-                        }
-                    }
                 }
 
                 if (!foundOpenCurly) {
                     console.error("morelia: invalid if statement, missing opening curly brace")
-                    process.exit(1)
-                }
-
-                if (firstIndex === undefined) {
-                    console.error("morelia: invalid if statement, missing equality operator")
                     process.exit(1)
                 }
 
@@ -290,7 +252,6 @@ function Parse(toks: string[]) {
                 // parse elseif
                 let j = i + 1
                 let foundOpenCurly = false
-                let firstIndex = undefined
                 
                 for (j; j < toks.length; j++) {
                     if (TokenPart(toks[j])[0] === BaseToken.Newline) {
@@ -304,47 +265,10 @@ function Parse(toks: string[]) {
                             break
                         }
                     }
-                    
-                    if (TokenPart(toks[j])[0] === BaseToken.Greater) {
-                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
-                            firstIndex = j
-                        } else {
-                            console.error("morelia: invalid elseif statement, greater must be followed by equals")
-                            process.exit(1)
-                        }
-                    } else if (TokenPart(toks[j])[0] === BaseToken.Less) {
-                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
-                            firstIndex = j
-                        } else {
-                            console.error("morelia: invalid elseif statement, less must be followed by equals")
-                            process.exit(1)
-                        }
-                    } else if (TokenPart(toks[j])[0] === BaseToken.Not) {
-                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
-                            firstIndex = j
-                        } else {
-                            console.error("morelia: invalid elseif statement, not must be followed by equals")
-                            process.exit(1)
-                        }
-                    } else if (TokenPart(toks[j])[0] === BaseToken.Equals) {
-                        if (TokenPart(toks[j + 1])[0] === BaseToken.Equals) {
-                            firstIndex = j
-                        } else if (TokenPart(toks[j - 1])[0] === BaseToken.Equals) {
-                            // ignore
-                        } else {
-                            console.error("morelia: invalid elseif statement, equals must be followed by equals")
-                            process.exit(1)
-                        }
-                    }
                 }
                 
                 if (!foundOpenCurly) {
                     console.error("morelia: invalid elseif statement, missing opening curly brace")
-                    process.exit(1)
-                }
-                
-                if (firstIndex === undefined) {
-                    console.error("morelia: invalid elseif statement, missing equality operator")
                     process.exit(1)
                 }
                 
@@ -375,6 +299,30 @@ function Parse(toks: string[]) {
                 output.push("else")
             } else if (TokenPart(t)[1] === "return") {
                 output.push("return ")
+            } else if (TokenPart(t)[1] === "while") {
+                let j = i + 1
+                let foundOpenCurly = false
+                
+                for (j; j < toks.length; j++) {
+                    if (TokenPart(toks[j])[0] === BaseToken.Newline) {
+                        break
+                    }
+
+                    if (TokenPart(toks[j])[0] === BaseToken.OpenCurly) {
+                        if (openCurly !== j) {
+                            foundOpenCurly = true
+                            openCurly = j
+                            break
+                        }
+                    }
+                }
+                
+                if (!foundOpenCurly) {
+                    console.error("morelia: invalid while statement, missing opening curly brace")
+                    process.exit(1)
+                }
+                
+                output.push("while ")
             } else {
                 let j = i + 1
                 let foundOpenCurly = false
@@ -406,6 +354,10 @@ function Parse(toks: string[]) {
             output.push("*")
         } else if (TokenPart(t)[0] === BaseToken.Slash) {
             output.push("/")
+        } else if (TokenPart(t)[0] === BaseToken.Greater) {
+            output.push(">")
+        } else if (TokenPart(t)[0] === BaseToken.Less) {
+            output.push("<")
         } else if (TokenPart(t)[0] === BaseToken.Integer) {
             output.push(TokenPart(t)[1])
         } else if (TokenPart(t)[0] === BaseToken.Float) {
@@ -427,8 +379,30 @@ function Parse(toks: string[]) {
                 console.error(`morelia: string does not end with a quote: ${str.join("")}`)
                 process.exit(1)
             }
-            
+
             output.push(TokenPart(t)[1])
+        } else if (TokenPart(t)[0] === BaseToken.OpenBracket) {
+            // check for closing bracket
+            let j = i
+            let foundCloseBracket = false
+            
+            for (j; j < toks.length; j++) {
+                if (TokenPart(toks[j])[0] === BaseToken.CloseBracket) {
+                    foundCloseBracket = true
+                    break
+                }
+            }
+            
+            if (!foundCloseBracket) {
+                console.error("morelia: invalid list, missing closing bracket")
+                process.exit(1)
+            }
+            
+            output.push("[")
+        } else if (TokenPart(t)[0] === BaseToken.CloseBracket) {
+            output.push("]")
+        } else if (TokenPart(t)[0] === BaseToken.Period) {
+            output.push(".")
         } else if (TokenPart(t)[0] === BaseToken.OpenParen) {
             output.push("(")
         } else if (TokenPart(t)[0] === BaseToken.CloseParen) {

@@ -1,0 +1,11 @@
+# this is a comment
+# this is another comment
+
+# wow
+
+# print("Hello, World!")
+# ^
+# |
+# this does not run...
+
+# because it is a comment

@@ -1,0 +1,7 @@
+a = 5
+b = 8
+c = 12
+d = 54
+
+result = a + b * c / d
+print(result)
