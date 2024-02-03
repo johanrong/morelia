@@ -1,7 +1,7 @@
 {
   "name": "morelia",
   "module": "index.ts",
-  "version": "0.9",
+  "version": "1.0",
   "type": "module",
   "scripts": {
     "start": "bun run index.ts",
