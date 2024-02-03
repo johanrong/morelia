@@ -1,11 +1,10 @@
 // Morelia -> Python Transpiler
 
-import * as fs from "node:fs"
-import * as child_process from "node:child_process";
 import * as os from "node:os";
+import * as fs from "node:fs";
+import { version } from "./package.json";
 
 // Base tokens for Lexer/Tokenizer
-
 enum BaseToken {
     Equals = "Equals",
     Greater = "Greater",
@@ -457,9 +456,9 @@ function Generate(ir: string[]) {
 const argv = process.argv.slice(2)
 
 if (argv.length < 1) {
-    // TODO: implement repl
-    console.error("morelia: repl not implemented yet")
-    process.exit(1)
+    console.info(`(morelia v${version})`)
+    console.info("morelia <source_path> [--debug]")
+    process.exit(0)
 }
 
 let source_path = ""
@@ -481,7 +480,7 @@ if (!fs.existsSync(source_path)) {
     process.exit(1)
 }
 
-const source = fs.readFileSync(source_path).toString()
+const source = await Bun.file(source_path).text()
 const tokens= Tokenize(source)
 if (debugging) console.log("*From lexer*\n", tokens)
 
@@ -491,6 +490,8 @@ if (debugging) console.log("*From parser*\n", ir)
 const output = Generate(ir)
 if (debugging) console.log("*From codegen*\n", output)
 
+if (debugging) console.log("*From output*")
+
 if (!fs.existsSync(os.homedir() + "/morelia")) {
     fs.mkdirSync(os.homedir() + "/morelia")
 }
@@ -498,11 +499,10 @@ if (!fs.existsSync(os.homedir() + "/morelia")) {
 const temp_output = os.homedir() + "/morelia/temp.py"
 fs.writeFileSync(temp_output, output)
 
-if (debugging) console.log("*From output*")
 if (os.platform() === "linux") {
-    child_process.spawnSync(`python3`, [temp_output], { stdio: 'inherit' })
+    Bun.spawn(["python3", temp_output], { stdout: "inherit", stdio: ["inherit", "inherit", "inherit"] })
 } else if (os.platform() === "win32" || os.platform() === "darwin") {
-    child_process.spawnSync(`python`, [temp_output], { stdio: 'inherit' })
+    Bun.spawn(["python", temp_output], { stdout: "inherit", stdio: ["inherit", "inherit", "inherit"] })
 } else {
     console.error("morelia: operating system not supported.")
     process.exit(1)

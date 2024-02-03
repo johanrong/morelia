@@ -3,7 +3,7 @@
 
 ## Prerequisites
 - python3
-- bun or nodejs
+- bun
 
 ## Install dependencies
 ```bash
@@ -11,7 +11,6 @@ bun install
 ```
 
 ## Bundling
-- required for windows
 - can only be bundled on linux (macOS?) at the moment (bun windows limitations)
 ```bash
 bun run bundle
@@ -21,40 +20,24 @@ bun run bundle
 
 ### Linux
 -  tested on debian 12 bookworm wsl
-#### Complete project with bun
+#### Complete project
 ```bash
 bun start (args: path, --debug)
-```
-
-#### Bundled with node
-- bundle first *duh*
-```bash
-node bundle/index.js (args: path, --debug)
 ```
 
 ### Windows
 - tested
-#### Complete project with bun
+#### Complete project
 ```bash
 bun start (args: path, --debug)
-```
-#### Bundled with node
-```bash
-node bundle/index.js (args: path, --debug)
 ```
 
 ### Mac OS
 - not tested
-#### Complete project with bun
+#### Complete project
 ```bash
 bun start (args: path, --debug)
 ```
-
-#### Bundled with node
-```bash
-node bundle/index.js (args: path, --debug)
-```
-
 
 ## Documentation
 - This language is VERY similar to python and any python code should work in morelia after chaning ":" to {} and such.

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "bun run index.ts",
-    "bundle": "bun build index.ts --outdir bundle --target node"
+    "bundle": "bun build index.ts --outdir bundle --target bun"
   },
   "devDependencies": {
     "@types/bun": "latest"
