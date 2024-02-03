@@ -12,7 +12,7 @@ bun install
 
 ## Bundling
 - required for windows
-- can only be bundled on linux at the moment (bun windows limitations)
+- can only be bundled on linux (macOS?) at the moment (bun windows limitations)
 ```bash
 bun run bundle
 ```
@@ -34,7 +34,10 @@ node bundle/index.js (args: path, --debug)
 
 ### Windows
 - tested
-- can only be run through the bundled version
+#### Complete project with bun
+```bash
+bun start (args: path, --debug)
+```
 #### Bundled with node
 ```bash
 node bundle/index.js (args: path, --debug)
