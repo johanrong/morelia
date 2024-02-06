@@ -1,5 +1,1 @@
-try {
-    print(x)
-} catch {
-    print("NameError")
-}
+print("Hello, World!")
